@@ -1,5 +1,6 @@
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 class PizzaOrder {
@@ -37,49 +38,80 @@ public:
         std::cout << "================\n";
     }
 
+    int readValidChoice(const std::string& prompt, int min, int max) {
+        std::string input;
+
+        while (true) {
+            std::cout << prompt;
+            std::getline(std::cin, input);
+
+            try {
+                size_t pos = 0;
+                int choice = std::stoi(input, &pos);
+
+                if (pos != input.length() || choice < min || choice > max) {
+                    throw std::invalid_argument("out of range");
+                }
+
+                return choice;
+            } catch (const std::exception&) {
+                std::cout << "Invalid input. Please enter a number between "
+                          << min << " and " << max << ".\n";
+            }
+        }
+    }
+
+    std::string readRequiredText(const std::string& prompt) {
+        std::string input;
+
+        while (true) {
+            std::cout << prompt;
+            std::getline(std::cin, input);
+
+            if (!input.empty()) {
+                return input;
+            }
+
+            std::cout << "This field cannot be blank. Please try again.\n";
+        }
+    }
+
     void getOrder() {
-        int menuChoice;
-        int sizeChoice;
+        displayMenu();
+        int menuChoice = readValidChoice("Choose a pizza from the menu (1-4): ", 1, 4);
+        int sizeChoice = 0;
 
-        do {
-            displayMenu();
-            std::cout << "Choose a pizza from the menu (1-4): ";
-            std::cin >> menuChoice;
-
-            if (menuChoice == 1) {
+        switch (menuChoice) {
+            case 1:
                 pizza = "Margherita";
-            } else if (menuChoice == 2) {
+                break;
+            case 2:
                 pizza = "Pepperoni";
-            } else if (menuChoice == 3) {
+                break;
+            case 3:
                 pizza = "Veggie Supreme";
-            } else if (menuChoice == 4) {
+                break;
+            case 4:
                 pizza = "Meat Lovers";
-            } else {
-                std::cout << "Invalid choice. Please select a valid menu option.\n";
-                pizza = "";
-            }
-        } while (pizza.empty());
+                break;
+        }
 
-        do {
-            displaySizeMenu();
-            std::cout << "Choose a size (1-3): ";
-            std::cin >> sizeChoice;
+        displaySizeMenu();
+        sizeChoice = readValidChoice("Choose a size (1-3): ", 1, 3);
 
-            if (sizeChoice == 1) {
+        switch (sizeChoice) {
+            case 1:
                 size = "small";
-            } else if (sizeChoice == 2) {
+                break;
+            case 2:
                 size = "medium";
-            } else if (sizeChoice == 3) {
+                break;
+            case 3:
                 size = "large";
-            } else {
-                std::cout << "Invalid size. Please select a valid option.\n";
-                size = "";
-            }
-        } while (size.empty());
+                break;
+        }
 
-        std::cout << "What flavor or toppings would you like? ";
-        std::getline(std::cin >> std::ws, flavor);
-
+        flavor = readRequiredText("What flavor or toppings would you like? ");
         calculateCost();
     }
 
