@@ -7,23 +7,37 @@
 #include <string>
 #include <vector>
 
-class PizzaOrder {
+struct PizzaItem {
+    std::string name;
+    std::string size;
+    std::string toppings;
+    double price = 0.0;
+};
+
+class PizzaOrderingApp {
 private:
-    std::vector<std::string> pizzas;
-    std::vector<std::string> sizes;
-    std::vector<std::string> flavors;
-    std::vector<double> itemCosts;
+    std::vector<PizzaItem> items;
+    std::string customerName;
+    std::string customerPhone;
     std::string orderType = "Pickup";
+    std::string paymentMethod = "Cash";
     double subtotal = 0.0;
     double tax = 0.0;
     double deliveryFee = 0.0;
+    double discount = 0.0;
     double total = 0.0;
-    const double taxRate = 0.08;
 
-    double getPizzaPrice(const std::string& sizeName) const {
-        std::string normalized = sizeName;
-        std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+    static constexpr double TAX_RATE = 0.08;
+    static constexpr double DELIVERY_FEE_VALUE = 5.99;
+
+    std::string toLower(std::string input) const {
+        std::transform(input.begin(), input.end(), input.begin(),
                        [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+        return input;
+    }
+
+    double getPriceForSize(const std::string& size) const {
+        std::string normalized = toLower(size);
 
         if (normalized == "small") {
             return 10.99;
@@ -34,30 +48,17 @@ private:
         return 14.99;
     }
 
-public:
-    void displayMenu() const {
-        std::cout << "\n=== Pizza Menu ===\n";
-        std::cout << "1. Margherita\n";
-        std::cout << "2. Pepperoni\n";
-        std::cout << "3. Veggie Supreme\n";
-        std::cout << "4. Meat Lovers\n";
-        std::cout << "5. Exit\n";
-        std::cout << "==================\n";
-    }
-
-    void displaySizeMenu() const {
-        std::cout << "\n=== Size Menu ===\n";
-        std::cout << "1. Small\n";
-        std::cout << "2. Medium\n";
-        std::cout << "3. Large\n";
-        std::cout << "================\n";
-    }
-
-    void displayOrderTypeMenu() const {
-        std::cout << "\n=== Order Type ===\n";
-        std::cout << "1. Pickup\n";
-        std::cout << "2. Delivery\n";
-        std::cout << "================\n";
+    void resetOrder() {
+        items.clear();
+        customerName.clear();
+        customerPhone.clear();
+        orderType = "Pickup";
+        paymentMethod = "Cash";
+        subtotal = 0.0;
+        tax = 0.0;
+        deliveryFee = 0.0;
+        discount = 0.0;
+        total = 0.0;
     }
 
     int readValidChoice(const std::string& prompt, int min, int max) {
@@ -69,13 +70,13 @@ public:
 
             try {
                 size_t pos = 0;
-                int choice = std::stoi(input, &pos);
+                int value = std::stoi(input, &pos);
 
-                if (pos != input.length() || choice < min || choice > max) {
+                if (pos != input.length() || value < min || value > max) {
                     throw std::invalid_argument("out of range");
                 }
 
-                return choice;
+                return value;
             } catch (const std::exception&) {
                 std::cout << "Invalid input. Please enter a number between "
                           << min << " and " << max << ".\n";
@@ -110,13 +111,12 @@ public:
                 continue;
             }
 
-            std::transform(input.begin(), input.end(), input.begin(),
-                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+            std::string normalized = toLower(input);
 
-            if (input == "y" || input == "yes") {
+            if (normalized == "y" || normalized == "yes") {
                 return true;
             }
-            if (input == "n" || input == "no") {
+            if (normalized == "n" || normalized == "no") {
                 return false;
             }
 
@@ -124,122 +124,185 @@ public:
         }
     }
 
-    void getOrder() {
-        pizzas.clear();
-        sizes.clear();
-        flavors.clear();
-        itemCosts.clear();
-        subtotal = 0.0;
-        tax = 0.0;
-        deliveryFee = 0.0;
-        total = 0.0;
-        orderType = "Pickup";
+    std::string getPizzaName(int choice) const {
+        switch (choice) {
+            case 1: return "Margherita";
+            case 2: return "Pepperoni";
+            case 3: return "Veggie Supreme";
+            case 4: return "Meat Lovers";
+            default: return "Custom Pizza";
+        }
+    }
 
-        while (true) {
-            displayMenu();
-            int menuChoice = readValidChoice("Choose a pizza from the menu (1-5): ", 1, 5);
+    std::string getSizeName(int choice) const {
+        switch (choice) {
+            case 1: return "small";
+            case 2: return "medium";
+            case 3: return "large";
+            default: return "medium";
+        }
+    }
 
-            if (menuChoice == 5) {
-                std::cout << "Thanks for visiting! Exiting the order menu.\n";
-                std::exit(0);
-            }
+    std::string getPaymentMethod(int choice) const {
+        switch (choice) {
+            case 1: return "Cash";
+            case 2: return "Card";
+            case 3: return "Mobile Pay";
+            default: return "Cash";
+        }
+    }
 
-            std::string pizzaType;
-            switch (menuChoice) {
-                case 1:
-                    pizzaType = "Margherita";
-                    break;
-                case 2:
-                    pizzaType = "Pepperoni";
-                    break;
-                case 3:
-                    pizzaType = "Veggie Supreme";
-                    break;
-                case 4:
-                    pizzaType = "Meat Lovers";
-                    break;
-                default:
-                    pizzaType = "Custom Pizza";
-                    break;
-            }
+    void displayWelcome() const {
+        std::cout << "\n===================================\n";
+        std::cout << "      Welcome to Pizza Palace      \n";
+        std::cout << "===================================\n";
+    }
 
-            displaySizeMenu();
-            int sizeChoice = readValidChoice("Choose a size (1-3): ", 1, 3);
+    void displayPizzaMenu() const {
+        std::cout << "\n=== Pizza Menu ===\n";
+        std::cout << "1. Margherita\n";
+        std::cout << "2. Pepperoni\n";
+        std::cout << "3. Veggie Supreme\n";
+        std::cout << "4. Meat Lovers\n";
+        std::cout << "5. Exit\n";
+        std::cout << "==================\n";
+    }
 
-            std::string selectedSize;
-            switch (sizeChoice) {
-                case 1:
-                    selectedSize = "small";
-                    break;
-                case 2:
-                    selectedSize = "medium";
-                    break;
-                case 3:
-                    selectedSize = "large";
-                    break;
-                default:
-                    selectedSize = "medium";
-                    break;
-            }
+    void displaySizeMenu() const {
+        std::cout << "\n=== Size Menu ===\n";
+        std::cout << "1. Small\n";
+        std::cout << "2. Medium\n";
+        std::cout << "3. Large\n";
+        std::cout << "================\n";
+    }
 
-            std::string selectedFlavor = readRequiredText("What flavor or toppings would you like? ");
+    void displayOrderTypeMenu() const {
+        std::cout << "\n=== Order Type ===\n";
+        std::cout << "1. Pickup\n";
+        std::cout << "2. Delivery\n";
+        std::cout << "================\n";
+    }
 
-            pizzas.push_back(pizzaType);
-            sizes.push_back(selectedSize);
-            flavors.push_back(selectedFlavor);
+    void displayPaymentMenu() const {
+        std::cout << "\n=== Payment Method ===\n";
+        std::cout << "1. Cash\n";
+        std::cout << "2. Card\n";
+        std::cout << "3. Mobile Pay\n";
+        std::cout << "====================\n";
+    }
 
-            double itemCost = getPizzaPrice(selectedSize);
-            itemCosts.push_back(itemCost);
-            subtotal += itemCost;
+    void addPizza() {
+        displayPizzaMenu();
+        int pizzaChoice = readValidChoice("Choose a pizza from the menu (1-5): ", 1, 5);
 
-            if (!readYesNo("Would you like to add another pizza? (y/n): ")) {
-                break;
-            }
+        if (pizzaChoice == 5) {
+            std::cout << "Thanks for visiting! Exiting the order menu.\n";
+            std::exit(0);
         }
 
+        displaySizeMenu();
+        int sizeChoice = readValidChoice("Choose a size (1-3): ", 1, 3);
+
+        PizzaItem item;
+        item.name = getPizzaName(pizzaChoice);
+        item.size = getSizeName(sizeChoice);
+        item.toppings = readRequiredText("What flavor or toppings would you like? ");
+        item.price = getPriceForSize(item.size);
+
+        items.push_back(item);
+        subtotal += item.price;
+    }
+
+    void applyDiscount() {
+        if (!readYesNo("Do you have a promo code? (y/n): ")) {
+            return;
+        }
+
+        std::string code = readRequiredText("Enter promo code: ");
+        std::string normalized = toLower(code);
+
+        if (normalized == "save10") {
+            discount = subtotal * 0.10;
+            std::cout << "Promo code applied: SAVE10\n";
+        } else if (normalized == "freeship") {
+            discount = 0.0;
+            deliveryFee = 0.0;
+            std::cout << "Promo code applied: FREESHIP\n";
+        } else {
+            std::cout << "Invalid promo code. No discount applied.\n";
+        }
+    }
+
+    void finalizeOrder() {
         displayOrderTypeMenu();
-        int orderTypeChoice = readValidChoice("Choose your order type (1-2): ", 1, 2);
-        if (orderTypeChoice == 2) {
-            orderType = "Delivery";
-            deliveryFee = 5.99;
+        int typeChoice = readValidChoice("Choose your order type (1-2): ", 1, 2);
+        orderType = (typeChoice == 2) ? "Delivery" : "Pickup";
+
+        if (orderType == "Delivery") {
+            deliveryFee = DELIVERY_FEE_VALUE;
         }
 
-        tax = subtotal * taxRate;
-        total = subtotal + tax + deliveryFee;
+        tax = (subtotal - discount) * TAX_RATE;
+        total = subtotal - discount + tax + deliveryFee;
+    }
+
+    void choosePayment() {
+        displayPaymentMenu();
+        int paymentChoice = readValidChoice("Choose a payment method (1-3): ", 1, 3);
+        paymentMethod = getPaymentMethod(paymentChoice);
+        std::cout << "Payment method selected: " << paymentMethod << "\n";
     }
 
     void printReceipt() const {
         std::cout << "\n----- Pizza Receipt -----\n";
-        for (std::size_t i = 0; i < pizzas.size(); ++i) {
-            std::cout << "Pizza " << i + 1 << ":          " << pizzas[i] << " (" << sizes[i] << ")\n";
-            std::cout << "Flavor/toppings: " << flavors[i] << '\n';
-            std::cout << "Price:           $" << std::fixed << std::setprecision(2) << itemCosts[i] << '\n';
-            std::cout << "-------------------------\n";
+        std::cout << "Customer:         " << customerName << '\n';
+        std::cout << "Phone:            " << customerPhone << '\n';
+        std::cout << "Order Type:       " << orderType << '\n';
+        std::cout << "Payment:          " << paymentMethod << '\n';
+
+        for (std::size_t i = 0; i < items.size(); ++i) {
+            const PizzaItem& item = items[i];
+            std::cout << "\nPizza " << i + 1 << ":         " << item.name << " (" << item.size << ")\n";
+            std::cout << "Flavor/Toppings:  " << item.toppings << '\n';
+            std::cout << "Price:            $" << std::fixed << std::setprecision(2) << item.price << '\n';
         }
 
-        std::cout << "Order type:      " << orderType << '\n';
-        std::cout << "Subtotal:        $" << std::fixed << std::setprecision(2) << subtotal << '\n';
-        std::cout << "Tax:             $" << std::fixed << std::setprecision(2) << tax << '\n';
-        std::cout << "Delivery fee:    $" << std::fixed << std::setprecision(2) << deliveryFee << '\n';
-        std::cout << "Total bill:      $" << std::fixed << std::setprecision(2) << total << '\n';
+        std::cout << "\nSubtotal:         $" << std::fixed << std::setprecision(2) << subtotal << '\n';
+        std::cout << "Discount:         $" << std::fixed << std::setprecision(2) << discount << '\n';
+        std::cout << "Tax:              $" << std::fixed << std::setprecision(2) << tax << '\n';
+        std::cout << "Delivery Fee:     $" << std::fixed << std::setprecision(2) << deliveryFee << '\n';
+        std::cout << "Total Bill:       $" << std::fixed << std::setprecision(2) << total << '\n';
         std::cout << "-------------------------\n";
+    }
+
+public:
+    void run() {
+        while (true) {
+            resetOrder();
+            displayWelcome();
+
+            customerName = readRequiredText("Enter customer name: ");
+            customerPhone = readRequiredText("Enter phone number: ");
+
+            do {
+                addPizza();
+            } while (readYesNo("Would you like to add another pizza? (y/n): "));
+
+            applyDiscount();
+            finalizeOrder();
+            choosePayment();
+            printReceipt();
+
+            if (!readYesNo("Would you like to place another order? (y/n): ")) {
+                std::cout << "\nThank you for ordering with Pizza Palace!\n";
+                break;
+            }
+        }
     }
 };
 
 int main() {
-    int a = 5; // Declare an integer variable 'a' and initialize it with the value 5
-    double b = 3.14; // Declare a double variable 'b' and initialize it with the value 3.14
-    char c = 'A'; // Declare a char variable 'c' and initialize it with the character 'A'
-    bool d = true; // Declare a boolean variable 'd' and initialize it with the value true
-
-    std::cout << "Integer: " << a << std::endl; // Output the value of 'a'
-    std::cout << "Double: " << b << std::endl; // Output the value of 'b'
-    std::cout << "Character: " << c << std::endl; // Output the value of 'c'
-    std::cout << "Boolean: " << d << std::endl; // Output the value of 'd'
-
-    PizzaOrder order;
-    order.getOrder();
-    order.printReceipt();
-
-    return 0; // Return 0 to indicate successful execution
+    PizzaOrderingApp app;
+    app.run();
+    return 0;
 }
