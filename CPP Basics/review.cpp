@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
@@ -27,6 +28,7 @@ public:
         std::cout << "2. Pepperoni\n";
         std::cout << "3. Veggie Supreme\n";
         std::cout << "4. Meat Lovers\n";
+        std::cout << "5. Exit\n";
         std::cout << "==================\n";
     }
 
@@ -77,42 +79,49 @@ public:
     }
 
     void getOrder() {
-        displayMenu();
-        int menuChoice = readValidChoice("Choose a pizza from the menu (1-4): ", 1, 4);
-        int sizeChoice = 0;
+        while (true) {
+            displayMenu();
+            int menuChoice = readValidChoice("Choose a pizza from the menu (1-5): ", 1, 5);
 
-        switch (menuChoice) {
-            case 1:
-                pizza = "Margherita";
-                break;
-            case 2:
-                pizza = "Pepperoni";
-                break;
-            case 3:
-                pizza = "Veggie Supreme";
-                break;
-            case 4:
-                pizza = "Meat Lovers";
-                break;
+            if (menuChoice == 5) {
+                std::cout << "Thanks for visiting! Exiting the order menu.\n";
+                std::exit(0);
+            }
+
+            switch (menuChoice) {
+                case 1:
+                    pizza = "Margherita";
+                    break;
+                case 2:
+                    pizza = "Pepperoni";
+                    break;
+                case 3:
+                    pizza = "Veggie Supreme";
+                    break;
+                case 4:
+                    pizza = "Meat Lovers";
+                    break;
+            }
+
+            displaySizeMenu();
+            int sizeChoice = readValidChoice("Choose a size (1-3): ", 1, 3);
+
+            switch (sizeChoice) {
+                case 1:
+                    size = "small";
+                    break;
+                case 2:
+                    size = "medium";
+                    break;
+                case 3:
+                    size = "large";
+                    break;
+            }
+
+            flavor = readRequiredText("What flavor or toppings would you like? ");
+            calculateCost();
+            return;
         }
-
-        displaySizeMenu();
-        sizeChoice = readValidChoice("Choose a size (1-3): ", 1, 3);
-
-        switch (sizeChoice) {
-            case 1:
-                size = "small";
-                break;
-            case 2:
-                size = "medium";
-                break;
-            case 3:
-                size = "large";
-                break;
-        }
-
-        flavor = readRequiredText("What flavor or toppings would you like? ");
-        calculateCost();
     }
 
     void printReceipt() const {
